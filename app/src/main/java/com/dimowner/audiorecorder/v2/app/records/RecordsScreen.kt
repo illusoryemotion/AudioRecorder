@@ -21,8 +21,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -67,6 +67,8 @@ import com.dimowner.audiorecorder.v2.app.ComposableLifecycle
 import com.dimowner.audiorecorder.v2.app.DeleteDialog
 import com.dimowner.audiorecorder.v2.app.RenameAlertDialog
 import com.dimowner.audiorecorder.v2.app.SaveAsDialog
+import com.dimowner.audiorecorder.v2.app.components.SwipeActionItem
+import com.dimowner.audiorecorder.v2.app.components.SwipeActionTemplate
 import com.dimowner.audiorecorder.v2.app.components.TouchPanel
 import com.dimowner.audiorecorder.v2.app.getTestWaveformData
 import com.dimowner.audiorecorder.v2.app.home.HomeScreenAction
@@ -349,80 +351,99 @@ internal fun RecordsScreen(
                             }
                             //The list of items for that specific date
                             items(recordsOnDate, key = { it.recordId }) { record ->
-                                RecordListItemView(
-                                    name = record.name,
-                                    details = record.details,
-                                    duration = record.duration,
-                                    isBookmarked = record.isBookmarked,
-                                    isSelected = record.recordId == uiState.activeRecord?.recordId
-                                            || uiState.selectedRecords.contains(record),
-                                    isShowMenuButton = uiState.selectedRecords.isEmpty()
-                                            && record.recordId != uiState.recordedRecordId,
-                                    onClickItem = {
-                                        if (!uiState.isRecording) {
-                                            if (uiState.selectedRecords.isEmpty()) {
-                                                onAction(RecordsScreenAction.OnItemSelect(record))
-                                                onHomeAction(HomeScreenAction.OnStartHomeScreen)
-                                                onHomeAction(HomeScreenAction.OnPlayClick)
-                                            } else {
+                                SwipeActionItem(
+                                    modifier = Modifier.animateItem(),
+                                    enabled = uiState.selectedRecords.isEmpty() && !uiState.isRecording,
+                                    startAction = SwipeActionTemplate.Toggle(
+                                        checkedIcon = painterResource(id = R.drawable.ic_bookmark),
+                                        uncheckedIcon = painterResource(id = R.drawable.ic_bookmark_bordered),
+                                        color = MaterialTheme.colorScheme.onTertiary,
+                                        contentDescription = stringResource(id = R.string.bookmarks),
+                                        isChecked = { it.isBookmarked },
+                                        onAction = { onAction(RecordsScreenAction.BookmarkRecord(it.recordId, !it.isBookmarked)) }
+                                    ),
+                                    endAction = SwipeActionTemplate.Simple(
+                                        icon = painterResource(id = R.drawable.ic_delete),
+                                        color = MaterialTheme.colorScheme.onError,
+                                        contentDescription = stringResource(id = R.string.delete),
+                                        onAction = { onAction(RecordsScreenAction.MoveRecordToRecycle(it.recordId)) }
+                                    ),
+                                    record
+                                ) {
+                                    RecordListItemView(
+                                        name = record.name,
+                                        details = record.details,
+                                        duration = record.duration,
+                                        isBookmarked = record.isBookmarked,
+                                        isSelected = record.recordId == uiState.activeRecord?.recordId
+                                                || uiState.selectedRecords.contains(record),
+                                        isShowMenuButton = uiState.selectedRecords.isEmpty()
+                                                && record.recordId != uiState.recordedRecordId,
+                                        onClickItem = {
+                                            if (!uiState.isRecording) {
+                                                if (uiState.selectedRecords.isEmpty()) {
+                                                    onAction(RecordsScreenAction.OnItemSelect(record))
+                                                    onHomeAction(HomeScreenAction.OnStartHomeScreen)
+                                                    onHomeAction(HomeScreenAction.OnPlayClick)
+                                                } else {
+                                                    onAction(RecordsScreenAction.MultiSelectAddItem(record))
+                                                }
+                                            }
+                                        },
+                                        onLongClickItem = {
+                                            if (!uiState.isRecording) {
                                                 onAction(RecordsScreenAction.MultiSelectAddItem(record))
                                             }
-                                        }
-                                    },
-                                    onLongClickItem = {
-                                        if (!uiState.isRecording) {
-                                            onAction(RecordsScreenAction.MultiSelectAddItem(record))
-                                        }
-                                    },
-                                    onClickBookmark = { isBookmarked ->
-                                        onAction(
-                                            RecordsScreenAction.BookmarkRecord(
-                                                record.recordId,
-                                                isBookmarked
+                                        },
+                                        onClickBookmark = { isBookmarked ->
+                                            onAction(
+                                                RecordsScreenAction.BookmarkRecord(
+                                                    record.recordId,
+                                                    isBookmarked
+                                                )
                                             )
-                                        )
-                                    },
-                                    onClickMenu = {
-                                        when (it) {
-                                            RecordDropDownMenuItemId.SHARE -> {
-                                                onAction(RecordsScreenAction.ShareRecord(record.recordId))
-                                            }
+                                        },
+                                        onClickMenu = {
+                                            when (it) {
+                                                RecordDropDownMenuItemId.SHARE -> {
+                                                    onAction(RecordsScreenAction.ShareRecord(record.recordId))
+                                                }
 
-                                            RecordDropDownMenuItemId.INFORMATION -> {
-                                                onAction(RecordsScreenAction.ShowRecordInfo(record.recordId))
-                                            }
+                                                RecordDropDownMenuItemId.INFORMATION -> {
+                                                    onAction(RecordsScreenAction.ShowRecordInfo(record.recordId))
+                                                }
 
-                                            RecordDropDownMenuItemId.RENAME -> {
-                                                onAction(
-                                                    RecordsScreenAction.OnRenameRecordRequest(
-                                                        record
+                                                RecordDropDownMenuItemId.RENAME -> {
+                                                    onAction(
+                                                        RecordsScreenAction.OnRenameRecordRequest(
+                                                            record
+                                                        )
                                                     )
-                                                )
-                                            }
+                                                }
 
-                                            RecordDropDownMenuItemId.OPEN_WITH -> {
-                                                onAction(
-                                                    RecordsScreenAction.OpenRecordWithAnotherApp(
-                                                        record.recordId
+                                                RecordDropDownMenuItemId.OPEN_WITH -> {
+                                                    onAction(
+                                                        RecordsScreenAction.OpenRecordWithAnotherApp(
+                                                            record.recordId
+                                                        )
                                                     )
-                                                )
-                                            }
+                                                }
 
-                                            RecordDropDownMenuItemId.SAVE_AS -> {
-                                                onAction(RecordsScreenAction.OnSaveAsRequest(record))
-                                            }
+                                                RecordDropDownMenuItemId.SAVE_AS -> {
+                                                    onAction(RecordsScreenAction.OnSaveAsRequest(record))
+                                                }
 
-                                            RecordDropDownMenuItemId.DELETE -> {
-                                                onAction(
-                                                    RecordsScreenAction.OnMoveToRecycleRecordRequest(
-                                                        record
+                                                RecordDropDownMenuItemId.DELETE -> {
+                                                    onAction(
+                                                        RecordsScreenAction.OnMoveToRecycleRecordRequest(
+                                                            record
+                                                        )
                                                     )
-                                                )
+                                                }
                                             }
-                                        }
-                                    },
-                                    modifier = Modifier.animateItem(),
-                                )
+                                        },
+                                    )
+                                }
                             }
                         }
                         // Add bottom spacing when TouchPanel is visible so the last items

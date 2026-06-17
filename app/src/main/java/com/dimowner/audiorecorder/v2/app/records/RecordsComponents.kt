@@ -48,7 +48,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.DeviceFontFamilyName
@@ -409,7 +408,7 @@ fun RecordListItemView(
                     color = if (isSelected) {
                         MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
                     } else {
-                        Color.Transparent
+                        MaterialTheme.colorScheme.background
                     }
                 )
                 .combinedClickable(
@@ -511,7 +510,7 @@ fun RecordListItemView(
             }
         }
         HorizontalDivider(
-            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f),
+            color = MaterialTheme.colorScheme.outlineVariant,
         )
     }
 }
