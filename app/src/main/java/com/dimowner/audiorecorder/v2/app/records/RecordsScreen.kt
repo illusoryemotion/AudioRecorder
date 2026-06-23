@@ -67,8 +67,8 @@ import com.dimowner.audiorecorder.v2.app.ComposableLifecycle
 import com.dimowner.audiorecorder.v2.app.DeleteDialog
 import com.dimowner.audiorecorder.v2.app.RenameAlertDialog
 import com.dimowner.audiorecorder.v2.app.SaveAsDialog
-import com.dimowner.audiorecorder.v2.app.components.SwipeActionItem
-import com.dimowner.audiorecorder.v2.app.components.SwipeActionTemplate
+import com.dimowner.audiorecorder.v2.app.components.SwipeAction
+import com.dimowner.audiorecorder.v2.app.components.SwipeActionItemView
 import com.dimowner.audiorecorder.v2.app.components.TouchPanel
 import com.dimowner.audiorecorder.v2.app.getTestWaveformData
 import com.dimowner.audiorecorder.v2.app.home.HomeScreenAction
@@ -351,10 +351,10 @@ internal fun RecordsScreen(
                             }
                             //The list of items for that specific date
                             items(recordsOnDate, key = { it.recordId }) { record ->
-                                SwipeActionItem(
+                                SwipeActionItemView(
                                     modifier = Modifier.animateItem(),
                                     enabled = uiState.selectedRecords.isEmpty() && !uiState.isRecording,
-                                    startAction = SwipeActionTemplate.Toggle(
+                                    startAction = SwipeAction.Toggle(
                                         checkedIcon = painterResource(id = R.drawable.ic_bookmark),
                                         uncheckedIcon = painterResource(id = R.drawable.ic_bookmark_bordered),
                                         color = MaterialTheme.colorScheme.onTertiary,
@@ -362,7 +362,7 @@ internal fun RecordsScreen(
                                         isChecked = { it.isBookmarked },
                                         onAction = { onAction(RecordsScreenAction.BookmarkRecord(it.recordId, !it.isBookmarked)) }
                                     ),
-                                    endAction = SwipeActionTemplate.Simple(
+                                    endAction = SwipeAction.Simple(
                                         icon = painterResource(id = R.drawable.ic_delete),
                                         color = MaterialTheme.colorScheme.onError,
                                         contentDescription = stringResource(id = R.string.delete),

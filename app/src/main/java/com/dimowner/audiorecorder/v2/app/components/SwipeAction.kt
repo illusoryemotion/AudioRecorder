@@ -1,6 +1,5 @@
 package com.dimowner.audiorecorder.v2.app.components
 
-import android.util.Log
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
@@ -14,9 +13,7 @@ import androidx.compose.material3.SwipeToDismissBoxValue.StartToEnd
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
@@ -26,50 +23,27 @@ import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
+import timber.log.Timber
 import kotlin.math.max
 import kotlin.math.min
 
 @Composable
-fun <T> SwipeActionItem(
+fun <T> SwipeActionItemView(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
-    startAction: SwipeActionTemplate<T>?,
-    endAction: SwipeActionTemplate<T>?,
+    startAction: SwipeAction<T>?,
+    endAction: SwipeAction<T>?,
     //startAction: (T) -> Unit,
     //endAction: (T) -> Unit,
     itemData: T,
-    content:  @Composable RowScope.() -> Unit
+    content: @Composable RowScope.() -> Unit
 ) {
-    // Use rememberUpdatedState to ensure that the confirmValueChange lambda always
-    // uses the latest action callbacks and doesn't capture stale state.
-    val currentStartAction by rememberUpdatedState(startAction)
-    val currentEndAction by rememberUpdatedState(endAction)
-    val currentItemData by rememberUpdatedState(itemData)
     val swipeToDismissBoxState = rememberSwipeToDismissBoxState()
-        /*confirmValueChange = {
-            if (it == StartToEnd) {
-                currentStartAction.onAction(currentItemData)
-            } else if (it == EndToStart) {
-                currentEndAction.onAction(currentItemData)
-            }    rememberSwipeToDismissBoxState()
-
-            // Reset item when toggling status (snap back)
-            it != StartToEnd
-        }
-    )*/
-    val scope = rememberCoroutineScope();
+    val scope = rememberCoroutineScope()
     // Called when user swipes past threshold
     LaunchedEffect(swipeToDismissBoxState.currentValue) {
         val currentValue = swipeToDismissBoxState.currentValue
-        Log.d("SwipeActionItem", "LaunchedEffect: $currentValue")
-        /*
-        when (currentValue) {
-            Settled -> return@LaunchedEffect
-            StartToEnd -> currentStartAction?.onAction(currentItemData)
-            EndToStart -> currentEndAction?.onAction(currentItemData)
-        }*/
-
-        // 4. Smoothly snap back to center AFTER the action is triggered
+        Timber.d("LaunchedEffect: $currentValue")
     }
 
 
@@ -79,16 +53,17 @@ fun <T> SwipeActionItem(
         enableDismissFromEndToStart = enabled && endAction != null,
         modifier = modifier.fillMaxSize(),
         // Called when user lets go past threshold
-        onDismiss = afterAction@{ when(it) {
-            StartToEnd -> startAction?.onAction(itemData)
-            EndToStart -> endAction?.onAction(itemData)
-            Settled -> return@afterAction
-        }
+        onDismiss = afterAction@{
+            when (it) {
+                StartToEnd -> startAction?.onAction(itemData)
+                EndToStart -> endAction?.onAction(itemData)
+                Settled -> return@afterAction
+            }
             scope.launch {
                 swipeToDismissBoxState.snapTo(Settled)
             }
-                    Log.d("SwipeActionItem", "onDismiss: $it")
-                    },
+            Timber.d("onDismiss: $it")
+        },
         backgroundContent = {
             when (swipeToDismissBoxState.dismissDirection) {
                 StartToEnd -> {
@@ -97,23 +72,25 @@ fun <T> SwipeActionItem(
                         SwipeActionIcon(
                             action = action,
                             itemData = itemData,
-                            offset = { swipeToDismissBoxState.requireOffset()},
+                            offset = { swipeToDismissBoxState.requireOffset() },
                             progress = { swipeToDismissBoxState.progress },
                             alignment = Alignment.CenterStart
                         )
                     }
                 }
+
                 EndToStart -> {
                     endAction?.let { action ->
                         SwipeActionIcon(
                             action = action,
                             itemData = itemData,
-                            offset = { swipeToDismissBoxState.requireOffset()},
+                            offset = { swipeToDismissBoxState.requireOffset() },
                             progress = { swipeToDismissBoxState.progress },
                             alignment = Alignment.CenterEnd
                         )
                     }
                 }
+
                 Settled -> {}
             }
         },
@@ -122,7 +99,7 @@ fun <T> SwipeActionItem(
 }
 
 
-sealed interface SwipeActionTemplate<T> {
+sealed interface SwipeAction<T> {
     val color: Color
     val contentDescription: String?
     fun getIcon(itemData: T): Painter
@@ -133,7 +110,7 @@ sealed interface SwipeActionTemplate<T> {
         override val color: Color,
         override val contentDescription: String? = null,
         override val onAction: (T) -> Unit
-    ) : SwipeActionTemplate<T> {
+    ) : SwipeAction<T> {
         override fun getIcon(itemData: T) = icon
     }
 
@@ -144,7 +121,7 @@ sealed interface SwipeActionTemplate<T> {
         override val color: Color,
         override val contentDescription: String? = null,
         override val onAction: (T) -> Unit
-    ) : SwipeActionTemplate<T> {
+    ) : SwipeAction<T> {
         // ENCAPSULATION: The template defines how to pick the icon
         override fun getIcon(itemData: T) =
             if (isChecked(itemData)) checkedIcon else uncheckedIcon
@@ -154,7 +131,7 @@ sealed interface SwipeActionTemplate<T> {
 
 @Composable
 private fun <T> SwipeActionIcon(
-    action: SwipeActionTemplate<T>,
+    action: SwipeAction<T>,
     itemData: T,
     offset: () -> Float,
     progress: () -> Float,
